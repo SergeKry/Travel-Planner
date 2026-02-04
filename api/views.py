@@ -3,23 +3,25 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Artwork, Project
-from .serializers import ProjectCreateSerializer, ProjectSerializer
+from .models import Artwork, Project, ProjectArtwork
+from .serializers import (
+    ProjectCreateSerializer,
+    ProjectSerializer,
+    ProjectUpdateSerializer,
+)
 from .utils import deduplicate_list_preserve_order
 from .services import ArtworkService
 
 
-class ProjectCreateAPIView(APIView):
+class ProjectListCreateAPIView(APIView):
     """
-    POST /api/projects/
-    Body:
-    {
-      "name": "My Project",
-      "description": "optional",
-      "start_date": "2026-02-04",
-      "artwork_ids": [4, 129884, 999]
-    }
+    GET  /api/projects/       -> list
+    POST /api/projects/       -> create (your existing logic)
     """
+
+    def get(self, request, pk: int):
+        project = get_object_or_404(Project, pk=pk)
+        return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = ProjectCreateSerializer(data=request.data)
@@ -66,39 +68,11 @@ class ProjectCreateAPIView(APIView):
         return Response(response_payload, status=status.HTTP_201_CREATED)
 
 
-class ProjectDeleteAPIView(APIView):
-    """
-    DELETE /api/projects/<id>/
-    Rule: can't delete if any linked places/artworks are marked visited.
-    """
-
-    def delete(self, request, pk: int):
-        project = get_object_or_404(Project, pk=pk)
-
-        has_visited = ProjectArtwork.objects.filter(project=project, visited=True).exists()
-        if has_visited:
-            return Response(
-                {"detail": "Project cannot be deleted because it has visited places."},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        project.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ProjectListAPIView(APIView):
-    """
-    GET /api/projects/
-    """
-    def get(self, request):
-        qs = Project.objects.order_by("-id")
-        return Response(ProjectSerializer(qs, many=True).data, status=status.HTTP_200_OK)
-
-
 class ProjectDetailAPIView(APIView):
     """
-    GET    /api/projects/<id>/
-    PATCH  /api/projects/<id>/   (partial update)
+    GET    /api/projects/<id>/  -> single
+    PATCH  /api/projects/<id>/  -> update fields
+    DELETE /api/projects/<id>/  -> delete if no visited places
     """
 
     def get(self, request, pk: int):
@@ -111,3 +85,15 @@ class ProjectDetailAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        project = get_object_or_404(Project, pk=pk)
+
+        if ProjectArtwork.objects.filter(project=project, visited=True).exists():
+            return Response(
+                {"detail": "Project cannot be deleted because it has visited places."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

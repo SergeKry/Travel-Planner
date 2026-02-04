@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ProjectCreateAPIView, ProjectDeleteAPIView
+from .views import ProjectListCreateAPIView, ProjectDetailAPIView
 
 urlpatterns = [
-    path("projects/", ProjectCreateAPIView.as_view(), name="project-create"),
-    path("projects/<int:pk>/", ProjectDeleteAPIView.as_view(), name="project-delete"),
+    path("projects/", ProjectListCreateAPIView.as_view(), name="project-list-create"),
+    path("projects/<int:pk>/", ProjectDetailAPIView.as_view(), name="project-detail"),
 ]
