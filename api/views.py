@@ -10,7 +10,7 @@ from .serializers import (
     ProjectUpdateSerializer,
     ProjectArtworkUpdateSerializer
 )
-from .utils import deduplicate_list_preserve_order
+
 from .services import ArtworkService
 
 
@@ -29,7 +29,7 @@ class ProjectListCreateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        artwork_ids = deduplicate_list_preserve_order(data["artwork_ids"])
+        artwork_ids = data["artwork_ids"]
 
         existing = Artwork.objects.filter(external_id__in=artwork_ids)
         existing_map = {a.external_id: a for a in existing}
@@ -130,18 +130,29 @@ class ProjectAddArtworkAPIView(APIView):
             artwork = Artwork.objects.get(external_id=external_id)
 
         with transaction.atomic():
-            link, created = ProjectArtwork.objects.get_or_create(
+            ProjectArtwork.objects.select_for_update().filter(project=project)
+            existing_link = ProjectArtwork.objects.filter(project=project, artwork=artwork).first()
+            if existing_link:
+                payload = ProjectSerializer(project).data
+                payload["added"] = {"external_id": artwork.external_id, "created_link": False}
+                return Response(payload, status=status.HTTP_200_OK)
+            current_count = ProjectArtwork.objects.filter(project=project).count()
+            if current_count >= 10:
+                return Response(
+                    {"detail": "A project can contain at most 10 places."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ProjectArtwork.objects.create(
                 project=project,
                 artwork=artwork,
-                defaults={"notes": "", "visited": False},
+                notes="",
+                visited=False,
             )
 
         payload = ProjectSerializer(project).data
-        payload["added"] = {
-            "external_id": artwork.external_id,
-            "created_link": created,
-        }
-        return Response(payload, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        payload["added"] = {"external_id": artwork.external_id, "created_link": True}
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class ProjectArtworkUpdateAPIView(APIView):

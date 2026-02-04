@@ -18,6 +18,22 @@ class ProjectCreateSerializer(serializers.Serializer):
         allow_empty=False,
     )
 
+    def validate_artwork_ids(self, value):
+        # validate after dedupe so 10 unique places max
+        seen = set()
+        deduped = []
+        for x in value:
+            if x not in seen:
+                seen.add(x)
+                deduped.append(x)
+
+        if len(deduped) < 1:
+            raise serializers.ValidationError("A project must contain at least 1 place.")
+        if len(deduped) > 10:
+            raise serializers.ValidationError("A project can contain at most 10 places.")
+
+        return deduped
+
 
 class ProjectUpdateSerializer(serializers.ModelSerializer):
     class Meta:
