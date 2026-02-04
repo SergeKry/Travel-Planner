@@ -26,7 +26,7 @@ class Project(models.Model):
 
 
 class ProjectArtwork(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project_artworks",)
     artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE)
 
     notes = models.TextField(blank=True, default="")

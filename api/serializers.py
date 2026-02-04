@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Artwork, Project
+from .models import Artwork, Project, ProjectArtwork
 
 
 class ArtworkSerializer(serializers.ModelSerializer):
@@ -19,9 +19,31 @@ class ProjectCreateSerializer(serializers.Serializer):
     )
 
 
+class ProjectArtworkSerializer(serializers.ModelSerializer):
+    """Serializer for the through model"""
+    artwork = ArtworkSerializer()
+
+    class Meta:
+        model = ProjectArtwork
+        fields = [
+            "artwork",
+            "notes",
+            "visited",
+        ]
+
+
 class ProjectSerializer(serializers.ModelSerializer):
-    artworks = ArtworkSerializer(many=True)
+    artworks = ProjectArtworkSerializer(
+        source="project_artworks",
+        many=True,
+    )
 
     class Meta:
         model = Project
-        fields = ["id", "name", "description", "start_date", "artworks"]
+        fields = [
+            "id",
+            "name",
+            "description",
+            "start_date",
+            "artworks",
+        ]
