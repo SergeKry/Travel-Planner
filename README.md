@@ -21,7 +21,7 @@ A Django REST Framework application for managing travel projects and artwork col
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/SergeKry/Travel-Planner.git
 cd Travel-Planner
 ```
 
