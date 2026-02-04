@@ -72,3 +72,32 @@ class ProjectService:
                 project.save(update_fields=["is_completed"])
 
         return project
+
+
+class ProjectArtworkService:
+    MAX_PLACES = 10
+
+    @staticmethod
+    def add_artwork_to_project(*, project: Project, artwork: Artwork) -> bool:
+        """
+        Transaction-safe add.
+        Returns True if link created, False if it already existed.
+
+        Enforces MAX_PLACES and prevents duplicates.
+        Must be called inside transaction.atomic().
+        """
+        # Lock existing rows for race-safety on count and duplicates
+        ProjectArtwork.objects.select_for_update().filter(project=project)
+
+        if ProjectArtwork.objects.filter(project=project, artwork=artwork).exists():
+            return False
+
+        if ProjectArtwork.objects.filter(project=project).count() >= ProjectArtworkService.MAX_PLACES:
+            raise ValueError({"detail": f"A project can contain at most {ProjectArtworkService.MAX_PLACES} places."})
+
+        try:
+            ProjectArtwork.objects.create(project=project, artwork=artwork, notes="", visited=False)
+        except IntegrityError:
+            return False
+
+        return True

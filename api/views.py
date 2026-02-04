@@ -130,25 +130,13 @@ class ProjectAddArtworkAPIView(APIView):
             artwork = Artwork.objects.get(external_id=external_id)
 
         with transaction.atomic():
-            ProjectArtwork.objects.select_for_update().filter(project=project)
-            existing_link = ProjectArtwork.objects.filter(project=project, artwork=artwork).first()
-            if existing_link:
-                payload = ProjectSerializer(project).data
-                payload["added"] = {"external_id": artwork.external_id, "created_link": False}
-                return Response(payload, status=status.HTTP_200_OK)
-            current_count = ProjectArtwork.objects.filter(project=project).count()
-            if current_count >= 10:
-                return Response(
-                    {"detail": "A project can contain at most 10 places."},
-                    status=status.HTTP_400_BAD_REQUEST,
+            try:
+                created = ProjectArtworkService.add_artwork_to_project(
+                    project=project,
+                    artwork=artwork,
                 )
-
-            ProjectArtwork.objects.create(
-                project=project,
-                artwork=artwork,
-                notes="",
-                visited=False,
-            )
+            except ValueError as e:
+                return Response(e.args[0], status=status.HTTP_400_BAD_REQUEST)
 
         payload = ProjectSerializer(project).data
         payload["added"] = {"external_id": artwork.external_id, "created_link": True}
