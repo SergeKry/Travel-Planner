@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from .models import Artwork, Project, ProjectArtwork
 from .serializers import (
@@ -100,6 +101,7 @@ class ProjectDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(tags=["Artwork (Places)"])
 class ProjectAddArtworkAPIView(APIView):
     """
     POST /api/projects/<project_id>/artworks/
@@ -143,6 +145,7 @@ class ProjectAddArtworkAPIView(APIView):
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["Artwork (Places)"])
 class ProjectArtworkUpdateAPIView(APIView):
     """
     PATCH /api/projects/<project_id>/artworks/<artwork_id>/
@@ -187,6 +190,7 @@ class ProjectArtworkUpdateAPIView(APIView):
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Artwork (Places)"])
 class ProjectArtworkListAPIView(APIView):
     """
     GET /api/projects/<project_id>/artworks/
@@ -206,6 +210,7 @@ class ProjectArtworkListAPIView(APIView):
         return Response(ProjectArtworkSerializer(qs, many=True).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Artwork (Places)"])
 class ProjectArtworkDetailAPIView(APIView):
     """
     GET /api/projects/<project_id>/artworks/<artwork_id>/
