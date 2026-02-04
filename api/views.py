@@ -93,3 +93,21 @@ class ProjectListAPIView(APIView):
     def get(self, request):
         qs = Project.objects.order_by("-id")
         return Response(ProjectSerializer(qs, many=True).data, status=status.HTTP_200_OK)
+
+
+class ProjectDetailAPIView(APIView):
+    """
+    GET    /api/projects/<id>/
+    PATCH  /api/projects/<id>/   (partial update)
+    """
+
+    def get(self, request, pk: int):
+        project = get_object_or_404(Project, pk=pk)
+        return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk: int):
+        project = get_object_or_404(Project, pk=pk)
+        serializer = ProjectUpdateSerializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)

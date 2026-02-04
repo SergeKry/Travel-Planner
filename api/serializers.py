@@ -19,6 +19,12 @@ class ProjectCreateSerializer(serializers.Serializer):
     )
 
 
+class ProjectUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ["name", "description", "start_date"]
+
+
 class ProjectArtworkSerializer(serializers.ModelSerializer):
     """Serializer for the through model"""
     artwork = ArtworkSerializer()
