@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import health
+from .views import ProjectCreateAPIView
 
 urlpatterns = [
-    path("health/", health),
+    path("projects/", ProjectCreateAPIView.as_view(), name="project-create"),
 ]
