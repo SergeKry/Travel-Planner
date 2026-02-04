@@ -17,9 +17,29 @@ class Project(models.Model):
     description = models.TextField(blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
 
-    artworks = models.ManyToManyField(Artwork, related_name="projects")
+    artworks = models.ManyToManyField(Artwork, through="ProjectArtwork", related_name="projects")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return self.name
+
+
+class ProjectArtwork(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE)
+
+    notes = models.TextField(blank=True, default="")
+    visited = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("project", "artwork")
+        indexes = [
+            models.Index(fields=["project", "visited"]),
+        ]
+
+    def __str__(self):
+        return f"{self.project_id} -> {self.artwork_id}"
