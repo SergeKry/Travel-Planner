@@ -36,7 +36,6 @@ class ProjectCreateAPIView(APIView):
         # Fetch missing from Art Institute API
         created_artworks, fetch_errors = ArtworkService.fetch_missing_artworks(missing_ids)
 
-        # Save all new artworks and create the project with transaction atomic
         with transaction.atomic():
             if created_artworks:
                 Artwork.objects.bulk_create(created_artworks, ignore_conflicts=True)
@@ -51,7 +50,14 @@ class ProjectCreateAPIView(APIView):
                 description=data.get("description"),
                 start_date=data.get("start_date"),
             )
-            project.artworks.set(ordered_artworks)
+            links = [
+                ProjectArtwork(
+                    project=project,
+                    artwork=artwork,
+                )
+                for artwork in ordered_artworks
+            ]
+            ProjectArtwork.objects.bulk_create(links, ignore_conflicts=True)
 
         response_payload = ProjectSerializer(project).data
         if fetch_errors:
