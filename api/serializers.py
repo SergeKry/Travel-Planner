@@ -57,3 +57,8 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class ProjectAddArtworkSerializer(serializers.Serializer):
     artwork_id = serializers.IntegerField(min_value=1)
+
+
+class ProjectArtworkUpdateSerializer(serializers.Serializer):
+    notes = serializers.CharField(required=False, allow_blank=True)
+    visited = serializers.BooleanField(required=False)

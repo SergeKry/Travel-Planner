@@ -8,6 +8,7 @@ from .serializers import (
     ProjectCreateSerializer,
     ProjectSerializer,
     ProjectUpdateSerializer,
+    ProjectArtworkUpdateSerializer
 )
 from .utils import deduplicate_list_preserve_order
 from .services import ArtworkService
@@ -141,3 +142,31 @@ class ProjectAddArtworkAPIView(APIView):
             "created_link": created,
         }
         return Response(payload, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class ProjectArtworkUpdateAPIView(APIView):
+    """
+    PATCH /api/projects/<project_id>/artworks/<artwork_id>/
+    Body: { "notes": "...", "visited": true }
+    Updates the through-table fields for this artwork inside this project.
+    """
+
+    def patch(self, request, project_id: int, artwork_id: int):
+        project = get_object_or_404(Project, pk=project_id)
+        artwork = get_object_or_404(Artwork, external_id=artwork_id)
+
+        link = get_object_or_404(ProjectArtwork, project=project, artwork=artwork)
+
+        serializer = ProjectArtworkUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+
+        if "notes" in payload:
+            link.notes = payload["notes"]
+
+        if "visited" in payload:
+            link.visited = payload["visited"]
+
+        link.save(update_fields=["notes", "visited"])
+
+        return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
