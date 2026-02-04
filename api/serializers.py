@@ -68,6 +68,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "description",
             "start_date",
             "artworks",
+            "is_completed",
         ]
 
 

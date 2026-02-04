@@ -1,5 +1,5 @@
 import requests
-from .models import Artwork
+from .models import Artwork, Project, ProjectArtwork
 
 ARTIC_BASE = "https://api.artic.edu/api/v1/artworks"
 
@@ -48,3 +48,27 @@ class ArtworkService:
                 fetch_errors.append({"id": aid, "error": str(e)})
 
         return created_artworks, fetch_errors
+
+
+class ProjectService:
+    @staticmethod
+    def sync_completion(project_id: int) -> Project:
+        """
+        Recalculate and persist Project completion state based on its ProjectArtwork rows.
+
+        Must be called inside transaction.atomic() if you want race-safety.
+        """
+        project = Project.objects.select_for_update().get(pk=project_id)
+
+        any_unvisited = ProjectArtwork.objects.filter(project_id=project_id, visited=False).exists()
+
+        if not any_unvisited:
+            if not project.is_completed:
+                project.is_completed = True
+                project.save(update_fields=["is_completed"])
+        else:
+            if project.is_completed:
+                project.is_completed = False
+                project.save(update_fields=["is_completed"])
+
+        return project

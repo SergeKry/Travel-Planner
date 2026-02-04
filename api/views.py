@@ -160,25 +160,41 @@ class ProjectArtworkUpdateAPIView(APIView):
     PATCH /api/projects/<project_id>/artworks/<artwork_id>/
     Body: { "notes": "...", "visited": true }
     Updates the through-table fields for this artwork inside this project.
+
+    Extra logic:
+    - If all places in the project are visited => project.is_completed=True (+ completed_at)
+    - Otherwise => project.is_completed=False (+ completed_at=None)
     """
 
     def patch(self, request, project_id: int, artwork_id: int):
-        project = get_object_or_404(Project, pk=project_id)
-        artwork = get_object_or_404(Artwork, external_id=artwork_id)
-
-        link = get_object_or_404(ProjectArtwork, project=project, artwork=artwork)
-
         serializer = ProjectArtworkUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
 
-        if "notes" in payload:
-            link.notes = payload["notes"]
+        with transaction.atomic():
+            project = get_object_or_404(Project.objects.select_for_update(), pk=project_id)
+            artwork = get_object_or_404(Artwork, external_id=artwork_id)
 
-        if "visited" in payload:
-            link.visited = payload["visited"]
+            link = get_object_or_404(
+                ProjectArtwork.objects.select_for_update(),
+                project=project,
+                artwork=artwork,
+            )
 
-        link.save(update_fields=["notes", "visited"])
+            visited_changed = False
+
+            if "notes" in payload:
+                link.notes = payload["notes"]
+
+            if "visited" in payload:
+                new_visited = payload["visited"]
+                visited_changed = (link.visited != new_visited)
+                link.visited = new_visited
+
+            link.save(update_fields=["notes", "visited"])
+
+            if visited_changed:
+                project = ProjectService.sync_completion(project_id=project.id)
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
 
