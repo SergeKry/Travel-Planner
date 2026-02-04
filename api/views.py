@@ -64,3 +64,23 @@ class ProjectCreateAPIView(APIView):
             response_payload["fetch_errors"] = fetch_errors
 
         return Response(response_payload, status=status.HTTP_201_CREATED)
+
+
+class ProjectDeleteAPIView(APIView):
+    """
+    DELETE /api/projects/<id>/
+    Rule: can't delete if any linked places/artworks are marked visited.
+    """
+
+    def delete(self, request, pk: int):
+        project = get_object_or_404(Project, pk=pk)
+
+        has_visited = ProjectArtwork.objects.filter(project=project, visited=True).exists()
+        if has_visited:
+            return Response(
+                {"detail": "Project cannot be deleted because it has visited places."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
