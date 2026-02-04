@@ -136,3 +136,43 @@ Key dependencies include:
 - Django REST Framework
 - requests (for API calls)
 
+## Docker Setup
+
+### Development with Docker
+
+1. **Build and run with Docker Compose:**
+
+```bash
+docker-compose up --build
+```
+
+2. **Run in background:**
+
+```bash
+docker-compose up -d --build
+```
+
+3. **Stop containers:**
+
+```bash
+docker-compose down
+```
+
+4. **View logs:**
+
+```bash
+docker-compose logs -f web
+```
+
+### Docker Commands
+
+- **Rebuild without cache:** `docker-compose build --no-cache`
+- **Run migrations:** `docker-compose exec web python manage.py migrate`
+- **Create superuser:** `docker-compose exec web python manage.py createsuperuser`
+- **Access shell:** `docker-compose exec web python manage.py shell`
+- **Collect static files:** `docker-compose exec web python manage.py collectstatic`
+
+The application will be available at `http://localhost:8000` when running with Docker.
+
+**Note:** This setup uses SQLite for simplicity. The database file will be stored in the `sqlite_data` Docker volume for persistence.
+
