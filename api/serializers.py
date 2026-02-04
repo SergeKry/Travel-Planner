@@ -53,3 +53,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "start_date",
             "artworks",
         ]
+
+
+class ProjectAddArtworkSerializer(serializers.Serializer):
+    artwork_id = serializers.IntegerField(min_value=1)

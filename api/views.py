@@ -97,3 +97,47 @@ class ProjectDetailAPIView(APIView):
 
         project.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectAddArtworkAPIView(APIView):
+    """
+    POST /api/projects/<project_id>/artworks/
+    Body: { "artwork_id": 123 }
+    """
+
+    def post(self, request, project_id: int):
+        project = get_object_or_404(Project, pk=project_id)
+
+        serializer = ProjectAddArtworkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        external_id = serializer.validated_data["artwork_id"]
+
+        artwork = Artwork.objects.filter(external_id=external_id).first()
+        if not artwork:
+            created_artworks, fetch_errors = ArtworkService.fetch_missing_artworks([external_id])
+
+            if fetch_errors or not created_artworks:
+                return Response(
+                    {
+                        "detail": "Artwork does not exist in third-party API or could not be fetched.",
+                        "errors": fetch_errors,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            Artwork.objects.bulk_create(created_artworks, ignore_conflicts=True)
+            artwork = Artwork.objects.get(external_id=external_id)
+
+        with transaction.atomic():
+            link, created = ProjectArtwork.objects.get_or_create(
+                project=project,
+                artwork=artwork,
+                defaults={"notes": "", "visited": False},
+            )
+
+        payload = ProjectSerializer(project).data
+        payload["added"] = {
+            "external_id": artwork.external_id,
+            "created_link": created,
+        }
+        return Response(payload, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
