@@ -84,3 +84,12 @@ class ProjectDeleteAPIView(APIView):
 
         project.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectListAPIView(APIView):
+    """
+    GET /api/projects/
+    """
+    def get(self, request):
+        qs = Project.objects.order_by("-id")
+        return Response(ProjectSerializer(qs, many=True).data, status=status.HTTP_200_OK)
