@@ -19,7 +19,19 @@ class Project(models.Model):
 
     artworks = models.ManyToManyField(Artwork, through="ProjectArtwork", related_name="projects")
 
+    is_completed = models.BooleanField(default=False, db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def mark_completed(self):
+        """Convenience helper"""
+        if not self.is_completed:
+            self.is_completed = True
+
+    def mark_incomplete(self):
+        """Convenience helper"""
+        if self.is_completed:
+            self.is_completed = False
 
     def __str__(self) -> str:
         return self.name
