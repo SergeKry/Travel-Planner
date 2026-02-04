@@ -170,3 +170,42 @@ class ProjectArtworkUpdateAPIView(APIView):
         link.save(update_fields=["notes", "visited"])
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_200_OK)
+
+
+class ProjectArtworkListAPIView(APIView):
+    """
+    GET /api/projects/<project_id>/artworks/
+    Lists all places/artworks in a project, including notes + visited.
+    """
+
+    def get(self, request, project_id: int):
+        project = get_object_or_404(Project, pk=project_id)
+
+        qs = (
+            ProjectArtwork.objects
+            .filter(project=project)
+            .select_related("artwork")
+            .order_by("id")
+        )
+
+        return Response(ProjectArtworkSerializer(qs, many=True).data, status=status.HTTP_200_OK)
+
+
+class ProjectArtworkDetailAPIView(APIView):
+    """
+    GET /api/projects/<project_id>/artworks/<artwork_id>/
+    Returns a single place/artwork within the project.
+    artwork_id = Artwork.external_id
+    """
+
+    def get(self, request, project_id: int, artwork_id: int):
+        project = get_object_or_404(Project, pk=project_id)
+        artwork = get_object_or_404(Artwork, external_id=artwork_id)
+
+        link = get_object_or_404(
+            ProjectArtwork.objects.select_related("artwork"),
+            project=project,
+            artwork=artwork,
+        )
+
+        return Response(ProjectArtworkSerializer(link).data, status=status.HTTP_200_OK)
